@@ -1,0 +1,6 @@
+{
+  "name": "CCEAS Portal - Institutional Archive",
+  "description": "Centralized College Committee & Event Archival System for statutory event records, NAAC/NBA compliance, and digital dossiers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
