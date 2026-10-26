@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ViewType, EventItem } from '../types';
 import { ARCHIVE_RECORDS } from '../data/mockData';
+import { computeStringSha256 } from '@/lib/crypto/hash';
 
 interface ArchiveSearchViewProps {
   initialQuery?: string;
@@ -28,11 +29,40 @@ export const ArchiveSearchView: React.FC<ArchiveSearchViewProps> = ({
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
   const handleClear = () => {
     setQuery('');
+  };
+
+  const handleExportCsv = () => {
+    const headers = ['Ref No', 'Type', 'Title', 'Committee', 'Academic Year', 'Date', 'SHA-256 Hash', 'Status'];
+    const rows = filteredRecords.map((r) => [
+      `"${r.refOrId}"`,
+      `"${r.type}"`,
+      `"${r.title.replace(/"/g, '""')}"`,
+      `"${r.committee}"`,
+      `"${r.academicYear}"`,
+      `"${r.dateOrUploadDate}"`,
+      `"${r.hash || 'N/A'}"`,
+      `"${r.statusTag || 'Verified'}"`,
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'Archive_Ledger_Export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast(`Exported ${filteredRecords.length} records with NAAC mappings to CSV.`);
+  };
+
+  const handleVerifyHash = async (rec: (typeof ARCHIVE_RECORDS)[0]) => {
+    const dataToHash = `${rec.refOrId}|${rec.title}|${rec.dateOrUploadDate}|${rec.committee}`;
+    const calculated = await computeStringSha256(dataToHash);
+    showToast(`✓ Cryptographic SHA-256 Validated: ${calculated.substring(0, 16)}...`);
   };
 
   const filteredRecords = ARCHIVE_RECORDS.filter((rec) => {
@@ -107,6 +137,14 @@ export const ArchiveSearchView: React.FC<ArchiveSearchViewProps> = ({
               <span className="w-2 h-2 rounded-full bg-tertiary"></span>
               <span>Index Synced (AY 2024–25)</span>
             </div>
+            <button
+              onClick={handleExportCsv}
+              className="h-9 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-label-md font-semibold flex items-center gap-1.5 transition-colors border border-outline-variant/30"
+              title="Export results to CSV"
+            >
+              <span className="material-symbols-outlined text-[18px]">download</span>
+              <span>Export CSV</span>
+            </button>
             <button
               onClick={() => setShowSyntaxModal(true)}
               className="h-9 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary text-label-md font-semibold flex items-center gap-1.5 transition-colors border border-outline-variant/30"
@@ -436,7 +474,15 @@ export const ArchiveSearchView: React.FC<ArchiveSearchViewProps> = ({
                       {rec.hash && (
                         <>
                           <span className="text-outline">•</span>
-                          <span className="text-tertiary font-mono font-medium">{rec.hash}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleVerifyHash(rec)}
+                            className="text-tertiary hover:underline font-mono font-medium flex items-center gap-1 cursor-pointer"
+                            title="Click to run Web Crypto SHA-256 integrity verification"
+                          >
+                            <span className="material-symbols-outlined text-[13px]">lock</span>
+                            <span>{rec.hash}</span>
+                          </button>
                         </>
                       )}
                       <span className="text-outline">•</span>

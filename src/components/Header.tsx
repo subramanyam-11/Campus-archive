@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ViewType, UserPersona } from '../types';
 import { USER_PERSONAS } from '../data/mockData';
+import { NotificationsDropdown } from './NotificationsDropdown';
 
 interface HeaderProps {
   currentView: ViewType;
@@ -187,6 +188,9 @@ export const Header: React.FC<HeaderProps> = ({
             className="w-full h-9 pl-9 pr-3 text-body-sm font-body-sm bg-surface rounded-lg border border-outline-variant/50 placeholder:text-outline text-on-surface focus:outline-none focus:border-primary focus:bg-surface-container-lowest transition-colors"
           />
         </div>
+
+        {/* Notifications Dropdown */}
+        <NotificationsDropdown />
 
         <div className="h-6 w-px bg-outline-variant/40 hidden sm:block"></div>
 

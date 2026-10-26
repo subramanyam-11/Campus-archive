@@ -5,6 +5,7 @@ import { RoleGuard } from '@/src/components/RoleGuard';
 import { useAuth } from '@/src/context/AuthContext';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { NotificationsDropdown } from '@/src/components/NotificationsDropdown';
 
 export default function HeadLayout({ children }: { children: React.ReactNode }) {
   const { user, profile, logout } = useAuth();
@@ -120,6 +121,7 @@ export default function HeadLayout({ children }: { children: React.ReactNode }) 
             </div>
 
             <div className="flex items-center gap-3">
+              <NotificationsDropdown />
               <div className="hidden sm:flex flex-col text-right">
                 <span className="text-xs font-bold text-white">{profile?.displayName || user?.email}</span>
                 <span className="text-[10px] text-indigo-400 font-mono">{profile?.prn || 'HEAD-01'}</span>

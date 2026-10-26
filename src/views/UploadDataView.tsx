@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { StagingItem, ViewType } from '../types';
 import { INITIAL_STAGING_ITEMS } from '../data/mockData';
+import { computeFileSha256 } from '@/lib/crypto/hash';
 
 interface UploadDataViewProps {
   onNavigate: (view: ViewType) => void;
@@ -17,6 +18,8 @@ export const UploadDataView: React.FC<UploadDataViewProps> = ({ onNavigate, onIm
   const [showLogModal, setShowLogModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isHashing, setIsHashing] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -78,6 +81,66 @@ export const UploadDataView: React.FC<UploadDataViewProps> = ({ onNavigate, onIm
     }, 1200);
   };
 
+  const processFiles = async (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
+
+    setIsHashing(true);
+    showToast(`Computing SHA-256 cryptographic hashes for ${fileArray.length} file(s)...`);
+
+    try {
+      const existingHashes = new Set(
+        stagingQueue
+          .map((i) => i.sha256Hash?.toLowerCase())
+          .filter(Boolean)
+      );
+
+      const newItems: StagingItem[] = [];
+
+      for (let idx = 0; idx < fileArray.length; idx++) {
+        const file = fileArray[idx];
+        const hash = await computeFileSha256(file);
+        const isDuplicate = existingHashes.has(hash.toLowerCase());
+
+        newItems.push({
+          id: `new-${stagingQueue.length + idx + 1}`,
+          fileName: file.name,
+          innerDocsCount: isDuplicate
+            ? 'Duplicate detected! SHA-256 collision'
+            : 'Extracted documents via client de-serializer',
+          detectedCommittee: 'ACM Student Chapter',
+          academicYear: 'AY 2024–25',
+          recordTitle: file.name.replace(/\.[^/.]+$/, ''),
+          size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+          type: file.name.split('.').pop()?.toUpperCase() || 'FILE',
+          status: isDuplicate ? 'Needs Review' : 'Auto-Mapped',
+          confidenceScore: isDuplicate ? 0 : 94,
+          confidence: isDuplicate ? 'Duplicate (0%)' : 'High (94%)',
+          selected: !isDuplicate,
+          notes: isDuplicate
+            ? 'DUPLICATE: Identical SHA-256 hash already exists in repository.'
+            : 'Verified cryptographic SHA-256 fingerprint.',
+          sha256Hash: hash,
+        });
+
+        existingHashes.add(hash.toLowerCase());
+      }
+
+      setStagingQueue((prev) => [...newItems, ...prev]);
+      const dups = newItems.filter((i) => i.status === 'Needs Review').length;
+      if (dups > 0) {
+        showToast(`Ingested ${newItems.length} file(s) (${dups} flagged as duplicate).`);
+      } else {
+        showToast(`Successfully processed & verified ${newItems.length} file(s).`);
+      }
+    } catch (err) {
+      console.error('Hashing error:', err);
+      showToast('Error calculating cryptographic hashes for uploaded files.');
+    } finally {
+      setIsHashing(false);
+    }
+  };
+
   const handleBrowseFiles = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -86,23 +149,7 @@ export const UploadDataView: React.FC<UploadDataViewProps> = ({ onNavigate, onIm
     input.onchange = (e) => {
       const files = (e.target as HTMLInputElement).files;
       if (files && files.length > 0) {
-        const newItems: StagingItem[] = Array.from(files).map((file, idx) => ({
-          id: `new-${Date.now()}-${idx}`,
-          fileName: file.name,
-          innerDocsCount: 'Extracted documents via client de-serializer',
-          detectedCommittee: 'ACM Student Chapter',
-          academicYear: 'AY 2024–25',
-          recordTitle: file.name.replace(/\.[^/.]+$/, ''),
-          size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-          type: file.name.split('.').pop()?.toUpperCase() || 'FILE',
-          status: 'Auto-Mapped',
-          confidenceScore: 94,
-          confidence: 'High (94%)',
-          selected: true,
-          notes: 'Uploaded from computer',
-        }));
-        setStagingQueue((prev) => [...prev, ...newItems]);
-        showToast(`Uploaded and extracted ${files.length} archive file(s).`);
+        processFiles(files);
       }
     };
     input.click();
@@ -157,16 +204,40 @@ export const UploadDataView: React.FC<UploadDataViewProps> = ({ onNavigate, onIm
         <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/40 p-space-lg flex flex-col gap-space-md shadow-sm">
           <div
             onClick={handleBrowseFiles}
-            className="border-2 border-dashed border-outline-variant hover:border-primary rounded-xl p-8 sm:p-10 flex flex-col items-center justify-center text-center bg-surface hover:bg-surface-container-low/50 transition-colors cursor-pointer group"
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+              if (e.dataTransfer.files) {
+                processFiles(e.dataTransfer.files);
+              }
+            }}
+            className={`border-2 border-dashed rounded-xl p-8 sm:p-10 flex flex-col items-center justify-center text-center transition-colors cursor-pointer group ${
+              isDragging
+                ? 'border-primary bg-primary/5 scale-[1.01]'
+                : 'border-outline-variant hover:border-primary bg-surface hover:bg-surface-container-low/50'
+            }`}
           >
-            <div className="w-14 h-14 rounded-xl bg-surface-container-high flex items-center justify-center text-primary group-hover:scale-105 transition-transform mb-3 shadow-sm">
-              <span className="material-symbols-outlined text-[30px]">cloud_upload</span>
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-transform mb-3 shadow-sm ${
+              isHashing ? 'bg-primary text-on-primary animate-spin' : 'bg-surface-container-high text-primary group-hover:scale-105'
+            }`}>
+              <span className="material-symbols-outlined text-[30px]">
+                {isHashing ? 'sync' : 'cloud_upload'}
+              </span>
             </div>
             <h3 className="font-semibold text-headline-sm text-on-surface">
-              Drag and drop historical folders, ZIP archives, or CSV/PDF spreadsheets here
+              {isHashing
+                ? 'Calculating SHA-256 hashes & checking deduplication ledger...'
+                : isDragging
+                ? 'Drop archives here to begin cryptographic verification...'
+                : 'Drag and drop historical folders, ZIP archives, or CSV/PDF spreadsheets here'}
             </h3>
             <p className="text-body-sm text-on-surface-variant max-w-xl mt-1 mb-4">
-              Supports <strong className="text-on-surface font-semibold">.zip, .csv, .xlsx, .pdf, .docx</strong> up to 250MB per batch. Bulk unpacks nested directories and attempts automatic AI OCR extraction.
+              Supports <strong className="text-on-surface font-semibold">.zip, .csv, .xlsx, .pdf, .docx</strong> up to 250MB per batch. Automatically verifies SHA-256 hash deduplication against existing institutional archives.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-space-sm">
               <button
@@ -175,7 +246,8 @@ export const UploadDataView: React.FC<UploadDataViewProps> = ({ onNavigate, onIm
                   e.stopPropagation();
                   handleBrowseFiles();
                 }}
-                className="h-9 px-4 rounded-lg bg-primary hover:bg-primary-container text-on-primary text-label-md font-semibold inline-flex items-center gap-2 transition-colors shadow-sm"
+                disabled={isHashing}
+                className="h-9 px-4 rounded-lg bg-primary hover:bg-primary-container text-on-primary text-label-md font-semibold inline-flex items-center gap-2 transition-colors shadow-sm disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">folder_open</span>
                 <span>Browse Files from Computer</span>
@@ -368,6 +440,12 @@ export const UploadDataView: React.FC<UploadDataViewProps> = ({ onNavigate, onIm
                             )}
                             {item.innerDocsCount}
                           </span>
+                          {item.sha256Hash && (
+                            <span className="text-[10px] font-mono text-outline flex items-center gap-1 mt-0.5" title={item.sha256Hash}>
+                              <span className="material-symbols-outlined text-[12px] text-primary">fingerprint</span>
+                              <span className="truncate max-w-[200px]">{item.sha256Hash.slice(0, 16)}...</span>
+                            </span>
+                          )}
                         </div>
                       </div>
                     </td>

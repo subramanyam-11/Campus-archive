@@ -5,6 +5,7 @@ import { RoleGuard } from '@/src/components/RoleGuard';
 import { useAuth } from '@/src/context/AuthContext';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { NotificationsDropdown } from '@/src/components/NotificationsDropdown';
 
 export default function FacultyLayout({ children }: { children: React.ReactNode }) {
   const { user, profile, logout } = useAuth();
@@ -121,6 +122,7 @@ export default function FacultyLayout({ children }: { children: React.ReactNode 
             </div>
 
             <div className="flex items-center gap-3">
+              <NotificationsDropdown />
               <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 bg-slate-800 rounded-lg text-xs text-slate-300">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span>Active Reviewer: {user?.email || 'convener@campus.edu'}</span>

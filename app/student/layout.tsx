@@ -5,6 +5,7 @@ import { RoleGuard } from '@/src/components/RoleGuard';
 import { useAuth } from '@/src/context/AuthContext';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { NotificationsDropdown } from '@/src/components/NotificationsDropdown';
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const { profile, logout } = useAuth();
@@ -121,6 +122,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             </div>
 
             <div className="flex items-center gap-3">
+              <NotificationsDropdown />
               <Link
                 href="/student/my-events"
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-semibold transition-colors"
