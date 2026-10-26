@@ -13,29 +13,35 @@ const LayoutInner = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Map Next.js path to ViewType
-  const currentView = (pathname.split('/')[1] || 'dashboard') as ViewType;
-  
-  const handleNavigate = (view: string) => {
-    router.push(`/${view}`);
-  };
-
   const {
     activePersona, setActivePersona,
     academicYear,
     isNewEventModalOpen, setIsNewEventModalOpen,
     isRegisterCommitteeModalOpen, setIsRegisterCommitteeModalOpen,
     handleGlobalSearch, handleCreateEvent, handleCreateCommittee,
-    committees
+    committees, selectedCommittee, selectedEvent,
+    handleNavigate
   } = useAppContext();
 
+  // Map Next.js pathname accurately to ViewType
+  const getActiveView = (path: string): ViewType => {
+    if (path.startsWith('/admin/reports') || path === '/reports') return 'reports';
+    if (path.startsWith('/archive')) return 'archive-and-search';
+    if (path.startsWith('/upload')) return 'upload-data';
+    if (path.startsWith('/committees/') && path !== '/committees') return 'committee-detail';
+    if (path.startsWith('/events/') && path !== '/events') return 'event-detail';
+    const firstSegment = path.split('/')[1];
+    return (firstSegment || 'dashboard') as ViewType;
+  };
+
+  const currentView = getActiveView(pathname);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
   return (
     <div className="min-h-screen bg-surface font-sans text-body-md text-on-surface antialiased flex flex-col">
       <Sidebar
         currentView={currentView}
-        onNavigate={handleNavigate as any}
+        onNavigate={handleNavigate}
         academicYear={academicYear}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
@@ -44,11 +50,11 @@ const LayoutInner = ({ children }: { children: React.ReactNode }) => {
       <div className="lg:pl-64 flex flex-col min-h-screen">
         <Header
           currentView={currentView}
-          selectedCommitteeName={undefined}
-          selectedEventTitle={undefined}
+          selectedCommitteeName={selectedCommittee?.name}
+          selectedEventTitle={selectedEvent?.title}
           activePersona={activePersona}
           onSelectPersona={setActivePersona}
-          onNavigate={handleNavigate as any}
+          onNavigate={handleNavigate}
           onGlobalSearch={handleGlobalSearch}
           onLogout={() => router.push('/sign-in')}
           onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}

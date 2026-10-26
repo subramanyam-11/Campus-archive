@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { EventItem, Committee } from '../types';
 
@@ -119,7 +121,7 @@ export const NewEventModal: React.FC<NewEventModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-label-sm font-medium text-on-surface mb-1">
                 Event Date <span className="text-error">*</span>
@@ -157,6 +159,20 @@ export const NewEventModal: React.FC<NewEventModalProps> = ({
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
                 placeholder="85000"
+                className="w-full h-10 px-3 text-body-sm font-body-sm bg-surface rounded-lg border border-outline-variant/60 focus:outline-none focus:border-primary text-on-surface"
+              />
+            </div>
+
+            <div>
+              <label className="block text-label-sm font-medium text-on-surface mb-1">
+                Delegate Capacity <span className="text-error">*</span>
+              </label>
+              <input
+                type="number"
+                required
+                value={targetDelegates}
+                onChange={(e) => setTargetDelegates(e.target.value)}
+                placeholder="200"
                 className="w-full h-10 px-3 text-body-sm font-body-sm bg-surface rounded-lg border border-outline-variant/60 focus:outline-none focus:border-primary text-on-surface"
               />
             </div>

@@ -1,12 +1,12 @@
 'use client';
 import { ReportsView } from '@/src/views/ReportsView';
-import { useRouter } from 'next/navigation';
+import { useAppContext } from '@/src/components/AppContext';
 
 export default function ReportsPage() {
-  const router = useRouter();
+  const { handleNavigate } = useAppContext();
   return (
     <ReportsView
-      onNavigate={(path) => router.push(`/${path}`)}
+      onNavigate={handleNavigate}
     />
   );
 }

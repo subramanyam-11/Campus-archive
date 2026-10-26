@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { StagingItem, ViewType } from '../types';
 import { INITIAL_STAGING_ITEMS } from '../data/mockData';
@@ -71,7 +73,8 @@ export const UploadDataView: React.FC<UploadDataViewProps> = ({ onNavigate, onIm
       onImportComplete(selectedCount);
       setTimeout(() => {
         setIsSuccess(false);
-      }, 2500);
+        onNavigate('archive-and-search');
+      }, 1500);
     }, 1200);
   };
 
@@ -93,6 +96,7 @@ export const UploadDataView: React.FC<UploadDataViewProps> = ({ onNavigate, onIm
           size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
           type: file.name.split('.').pop()?.toUpperCase() || 'FILE',
           status: 'Auto-Mapped',
+          confidenceScore: 94,
           confidence: 'High (94%)',
           selected: true,
           notes: 'Uploaded from computer',

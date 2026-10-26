@@ -1,11 +1,14 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Committee, ViewType, EventItem } from '../types';
 
 interface CommitteeDetailViewProps {
-  committee: Committee;
+  committee?: Committee;
   onNavigate: (view: ViewType) => void;
   events: EventItem[];
   onSelectEvent: (event: EventItem) => void;
+  initialTab?: 'overview' | 'roster' | 'events' | 'documents';
 }
 
 export const CommitteeDetailView: React.FC<CommitteeDetailViewProps> = ({
@@ -13,10 +16,26 @@ export const CommitteeDetailView: React.FC<CommitteeDetailViewProps> = ({
   onNavigate,
   events,
   onSelectEvent,
+  initialTab = 'overview',
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'roster' | 'events' | 'documents'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'roster' | 'events' | 'documents'>(initialTab);
   const [selectedAy, setSelectedAy] = useState('AY 2024–25 (Current Active)');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  if (!committee) {
+    return (
+      <div className="p-8 text-on-surface">
+        <h2 className="text-xl font-bold">Committee not found</h2>
+        <p className="text-on-surface-variant text-sm mt-1">The requested committee profile could not be loaded.</p>
+        <button 
+          onClick={() => onNavigate('committees')} 
+          className="mt-4 px-4 py-2 bg-primary text-on-primary rounded-lg font-medium hover:bg-primary-container transition-colors"
+        >
+          Back to Committees
+        </button>
+      </div>
+    );
+  }
 
   const committeeEvents = events.filter(
     (e) => e.committee.includes(committee.name) || e.committeeCode === committee.code
@@ -422,6 +441,56 @@ export const CommitteeDetailView: React.FC<CommitteeDetailViewProps> = ({
                       </span>
                     </div>
                   </div>
+                </div>
+              </article>
+
+              {/* Committee Events Card */}
+              <article className="bg-surface-container-lowest rounded-xl border border-outline-variant/40 p-space-lg shadow-sm">
+                <div className="flex items-center justify-between pb-space-sm border-b border-outline-variant/20 mb-space-sm">
+                  <div className="flex items-center gap-space-sm">
+                    <div className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+                      <span className="material-symbols-outlined text-[20px]">event</span>
+                    </div>
+                    <div>
+                      <h2 className="font-semibold text-headline-sm text-on-surface">Committee Events &amp; Sessions</h2>
+                      <span className="text-[11px] text-on-surface-variant">Active and past events convened by this body</span>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-semibold text-primary px-2 py-0.5 rounded-full bg-primary/10">
+                    {committeeEvents.length} Events Total
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2 pt-2">
+                  {committeeEvents.length === 0 ? (
+                    <div className="p-4 text-center text-on-surface-variant text-body-sm bg-surface rounded-lg">
+                      No events registered yet under this committee charter.
+                    </div>
+                  ) : (
+                    committeeEvents.map((evt) => (
+                      <div
+                        key={evt.id}
+                        onClick={() => {
+                          onSelectEvent(evt);
+                          onNavigate('events');
+                        }}
+                        className="p-3 bg-surface hover:bg-surface-container-low border border-outline-variant/30 rounded-lg flex items-center justify-between cursor-pointer transition-colors"
+                      >
+                        <div className="flex flex-col min-w-0 pr-3">
+                          <span className="font-semibold text-label-md text-on-surface truncate">{evt.title}</span>
+                          <div className="flex items-center gap-2 text-[11px] text-on-surface-variant mt-0.5">
+                            <span>{evt.dateStr}</span>
+                            <span>•</span>
+                            <span>{evt.venue}</span>
+                          </div>
+                        </div>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                          evt.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'
+                        }`}>
+                          {evt.status}
+                        </span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </article>
             </div>

@@ -1,12 +1,12 @@
 'use client';
 import { RosterView } from '@/src/views/RosterView';
-import { useRouter } from 'next/navigation';
+import { useAppContext } from '@/src/components/AppContext';
 
 export default function RosterPage() {
-  const router = useRouter();
+  const { handleNavigate } = useAppContext();
   return (
     <RosterView
-      onNavigate={(path) => router.push(`/${path}`)} 
+      onNavigate={handleNavigate} 
     />
   );
 }

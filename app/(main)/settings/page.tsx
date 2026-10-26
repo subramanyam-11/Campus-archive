@@ -1,14 +1,12 @@
 'use client';
 import { SettingsView } from '@/src/views/SettingsView';
 import { useAppContext } from '@/src/components/AppContext';
-import { useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
-  const { academicYear, setAcademicYear } = useAppContext();
-  const router = useRouter();
+  const { academicYear, setAcademicYear, handleNavigate } = useAppContext();
   return (
     <SettingsView
-      onNavigate={(path) => router.push(`/${path}`)} 
+      onNavigate={handleNavigate} 
       academicYear={academicYear}
       onUpdateAcademicYear={setAcademicYear}
     />

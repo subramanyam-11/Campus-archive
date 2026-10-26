@@ -1,14 +1,12 @@
 'use client';
 import { DashboardView } from '@/src/views/DashboardView';
 import { useAppContext } from '@/src/components/AppContext';
-import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
-  const { activePersona, events, handleSelectEvent, setIsNewEventModalOpen } = useAppContext();
-  const router = useRouter();
+  const { activePersona, events, handleSelectEvent, setIsNewEventModalOpen, handleNavigate } = useAppContext();
   return (
     <DashboardView
-      onNavigate={(path) => router.push(`/${path}`)} 
+      onNavigate={handleNavigate} 
       activePersona={activePersona} 
       events={events} 
       onSelectEvent={handleSelectEvent} 

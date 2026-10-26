@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState } from 'react';
-import { ViewType, ArchiveRecord, EventItem } from '../types';
+import { ViewType, EventItem } from '../types';
 import { ARCHIVE_RECORDS } from '../data/mockData';
 
 interface ArchiveSearchViewProps {
@@ -298,7 +300,7 @@ export const ArchiveSearchView: React.FC<ArchiveSearchViewProps> = ({
             <span className="font-semibold text-headline-sm text-on-surface">
               Showing {filteredRecords.length} search results matching{' '}
               <mark className="bg-primary-fixed text-primary px-1.5 py-0.5 rounded font-semibold">
-                "{query || 'all records'}"
+                &ldquo;{query || 'all records'}&rdquo;
               </mark>
             </span>
             <span className="px-2 py-0.5 rounded bg-surface-container-high text-on-surface text-[11px] font-semibold uppercase tracking-wider">
@@ -545,7 +547,7 @@ export const ArchiveSearchView: React.FC<ArchiveSearchViewProps> = ({
             <div className="text-body-sm text-on-surface-variant space-y-3">
               <p>The institutional archive search engine supports exact phrase and boolean operators:</p>
               <div className="bg-surface-container-low p-3 rounded-lg font-mono text-[12px] space-y-1.5">
-                <div><strong className="text-primary">"hackathon"</strong> : Matches exact string</div>
+                <div><strong className="text-primary">&quot;hackathon&quot;</strong> : Matches exact string</div>
                 <div><strong className="text-primary">NAAC AND Criterion</strong> : Intersects terms</div>
                 <div><strong className="text-primary">title:RoboForge</strong> : Restricts query to designated title</div>
                 <div><strong className="text-primary">ay:2023-24</strong> : Filters directly by academic session</div>

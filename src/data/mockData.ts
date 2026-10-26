@@ -730,6 +730,7 @@ export const INITIAL_STAGING_ITEMS: StagingItem[] = [
     size: '24.8 MB / ZIP',
     type: 'ZIP',
     status: 'Auto-Mapped',
+    confidenceScore: 94,
     confidence: 'High (94%)',
     selected: true,
     notes: 'Auto-mapped via Dean approval letterhead'
@@ -744,6 +745,7 @@ export const INITIAL_STAGING_ITEMS: StagingItem[] = [
     size: '12.4 MB / PDF',
     type: 'PDF',
     status: 'Auto-Mapped',
+    confidenceScore: 98,
     confidence: 'High (98%)',
     selected: true,
     notes: 'Verified against State NSS office circular'
@@ -758,6 +760,7 @@ export const INITIAL_STAGING_ITEMS: StagingItem[] = [
     size: '8.2 MB / PDF',
     type: 'PDF',
     status: 'Needs Review',
+    confidenceScore: 76,
     confidence: 'Medium (76%)',
     selected: true,
     notes: 'Low OCR confidence on footer academic date'

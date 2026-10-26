@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { RosterMember, ViewType } from '../types';
 import { INITIAL_ROSTER } from '../data/mockData';
@@ -189,7 +191,7 @@ export const RosterView: React.FC<RosterViewProps> = ({ onNavigate }) => {
             <select
               value={sessionScope}
               onChange={(e) => {
-                const val = e.target.value as any;
+                const val = e.target.value as 'current' | 'archived';
                 setSessionScope(val);
                 if (val === 'archived') {
                   showToast('Switched to AY 2023–24 Archived Snapshot (Read-Only Mode)');

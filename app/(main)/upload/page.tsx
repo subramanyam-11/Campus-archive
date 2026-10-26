@@ -1,13 +1,13 @@
 'use client';
 import { UploadDataView } from '@/src/views/UploadDataView';
-import { useRouter } from 'next/navigation';
+import { useAppContext } from '@/src/components/AppContext';
 
 export default function UploadPage() {
-  const router = useRouter();
+  const { handleNavigate } = useAppContext();
   return (
     <UploadDataView
-      onNavigate={(path) => router.push(`/${path}`)} 
-      onImportComplete={() => router.push('/events')} 
+      onNavigate={handleNavigate} 
+      onImportComplete={() => handleNavigate('events')} 
     />
   );
 }

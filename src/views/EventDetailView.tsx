@@ -1,9 +1,12 @@
+'use client';
+
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { EventItem, ViewType } from '../types';
 import { DossierModal } from '../components/DossierModal';
 
 interface EventDetailViewProps {
-  event: EventItem;
+  event?: EventItem;
   onNavigate: (view: ViewType) => void;
 }
 
@@ -11,6 +14,21 @@ export const EventDetailView: React.FC<EventDetailViewProps> = ({ event, onNavig
   const [isDossierOpen, setIsDossierOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<{ url: string; caption: string; alt: string } | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  if (!event) {
+    return (
+      <div className="p-8 text-on-surface">
+        <h2 className="text-xl font-bold">Event not found</h2>
+        <p className="text-on-surface-variant text-sm mt-1">The requested event dossier could not be loaded.</p>
+        <button 
+          onClick={() => onNavigate('events')} 
+          className="mt-4 px-4 py-2 bg-primary text-on-primary rounded-lg font-medium hover:bg-primary-container transition-colors"
+        >
+          Back to Events
+        </button>
+      </div>
+    );
+  }
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -326,10 +344,13 @@ export const EventDetailView: React.FC<EventDetailViewProps> = ({ event, onNavig
                     onClick={() => setSelectedPhoto(photo)}
                     className="group relative rounded-lg overflow-hidden bg-surface-container-low aspect-video flex flex-col cursor-pointer border border-outline-variant/40 shadow-sm hover:border-primary transition-all"
                   >
-                    <img
+                    <Image
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       src={photo.url}
                       alt={photo.alt}
+                      width={400}
+                      height={250}
+                      unoptimized
                     />
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-900/60 to-transparent p-2 pt-6">
                       <span className="block text-[11px] text-white font-medium truncate">
@@ -479,7 +500,14 @@ export const EventDetailView: React.FC<EventDetailViewProps> = ({ event, onNavig
               </button>
             </div>
             <div className="p-2 bg-slate-950 flex items-center justify-center">
-              <img src={selectedPhoto.url} alt={selectedPhoto.alt} className="max-h-[70vh] w-auto object-contain rounded" />
+              <Image
+                src={selectedPhoto.url}
+                alt={selectedPhoto.alt}
+                width={800}
+                height={600}
+                unoptimized
+                className="max-h-[70vh] w-auto object-contain rounded"
+              />
             </div>
             <div className="p-4 bg-surface text-body-sm text-on-surface-variant">
               {selectedPhoto.alt}

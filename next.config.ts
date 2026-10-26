@@ -8,6 +8,31 @@ const nextConfig: NextConfig = {
         destination: '/dashboard',
         permanent: false,
       },
+      {
+        source: '/archive-and-search',
+        destination: '/archive',
+        permanent: false,
+      },
+      {
+        source: '/upload-data',
+        destination: '/upload',
+        permanent: false,
+      },
+      {
+        source: '/reports',
+        destination: '/admin/reports',
+        permanent: false,
+      },
+      {
+        source: '/committee-detail',
+        destination: '/committees',
+        permanent: false,
+      },
+      {
+        source: '/event-detail',
+        destination: '/events',
+        permanent: false,
+      },
     ];
   },
 };

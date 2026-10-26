@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ViewType, UserPersona } from '../types';
 import { USER_PERSONAS } from '../data/mockData';

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Committee } from '../types';
 
@@ -116,7 +118,7 @@ export const RegisterCommitteeModal: React.FC<RegisterCommitteeModalProps> = ({
               <select
                 value={categoryType}
                 onChange={(e) => {
-                  const val = e.target.value as any;
+                  const val = e.target.value as Committee['categoryType'];
                   setCategoryType(val);
                   if (val === 'tech') setCategoryTag('Technical / CSE Department');
                   if (val === 'iqac') setCategoryTag('Statutory Body');
@@ -149,7 +151,7 @@ export const RegisterCommitteeModal: React.FC<RegisterCommitteeModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-label-sm font-medium text-on-surface mb-1">
                 Faculty In-Charge Name <span className="text-error">*</span>
@@ -165,7 +167,20 @@ export const RegisterCommitteeModal: React.FC<RegisterCommitteeModalProps> = ({
             </div>
             <div>
               <label className="block text-label-sm font-medium text-on-surface mb-1">
-                Initial Member Seats <span className="text-error">*</span>
+                Faculty Designation <span className="text-error">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={facultyDesignation}
+                onChange={(e) => setFacultyDesignation(e.target.value)}
+                placeholder="Associate Professor"
+                className="w-full h-10 px-3 text-body-sm font-body-sm bg-surface rounded-lg border border-outline-variant/60 focus:outline-none focus:border-primary text-on-surface"
+              />
+            </div>
+            <div>
+              <label className="block text-label-sm font-medium text-on-surface mb-1">
+                Member Seats <span className="text-error">*</span>
               </label>
               <input
                 type="number"

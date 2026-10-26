@@ -29,6 +29,7 @@ interface AppContextType {
   handleGlobalSearch: (q: string) => void;
   handleCreateEvent: (newEventData: Partial<EventItem>) => void;
   handleCreateCommittee: (newComm: Committee) => void;
+  handleNavigate: (view: ViewType | string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -48,6 +49,45 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [isNewEventModalOpen, setIsNewEventModalOpen] = useState<boolean>(false);
   const [isRegisterCommitteeModalOpen, setIsRegisterCommitteeModalOpen] = useState<boolean>(false);
+
+  const handleNavigate = (view: ViewType | string) => {
+    switch (view) {
+      case 'dashboard':
+        router.push('/dashboard');
+        break;
+      case 'committees':
+        router.push('/committees');
+        break;
+      case 'committee-detail':
+        router.push(selectedCommittee?.id ? `/committees/${selectedCommittee.id}` : '/committees');
+        break;
+      case 'events':
+        router.push('/events');
+        break;
+      case 'event-detail':
+        router.push(selectedEvent?.id ? `/events/${selectedEvent.id}` : '/events');
+        break;
+      case 'archive-and-search':
+      case 'archive':
+        router.push('/archive');
+        break;
+      case 'upload-data':
+      case 'upload':
+        router.push('/upload');
+        break;
+      case 'roster':
+        router.push('/roster');
+        break;
+      case 'reports':
+        router.push('/admin/reports');
+        break;
+      case 'settings':
+        router.push('/settings');
+        break;
+      default:
+        router.push(`/${view}`);
+    }
+  };
 
   const handleSelectCommittee = (c: Committee) => {
     setSelectedCommittee(c);
@@ -76,7 +116,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       department: newEventData.department || 'Department of Computer Science',
       convener: newEventData.convener || activePersona.name,
       category: newEventData.category || 'National Symposium',
-      categoryType: (newEventData.categoryType as any) || 'symposium',
+      categoryType: newEventData.categoryType || 'symposium',
       dateStr: newEventData.dateStr || '20 Nov 2024',
       rawDate: newEventData.rawDate || '2024-11-20',
       venue: newEventData.venue || 'Auditorium A',
@@ -129,7 +169,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       isNewEventModalOpen, setIsNewEventModalOpen,
       isRegisterCommitteeModalOpen, setIsRegisterCommitteeModalOpen,
       handleSelectCommittee, handleSelectEvent,
-      handleGlobalSearch, handleCreateEvent, handleCreateCommittee
+      handleGlobalSearch, handleCreateEvent, handleCreateCommittee,
+      handleNavigate
     }}>
       {children}
     </AppContext.Provider>
