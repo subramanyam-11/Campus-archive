@@ -1,28 +1,18 @@
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, connectFirestoreEmulator, doc, setDoc } from 'firebase/firestore';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import type { Committee, EventItem, UserProfile, EventStatus } from '../src/types';
 
-// Initialize Firebase App for seeding (connects to emulator by default)
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'demo-api-key',
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'demo-campus-archive.firebaseapp.com',
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'demo-campus-archive',
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'demo-campus-archive.appspot.com',
-  messagingSenderId: '123456789012',
-  appId: '1:123456789012:web:demoabcdef123456',
-};
+// Connect to Firestore emulator for seeding
+process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8080';
 
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+const app = getApps().length === 0
+  ? initializeApp({
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'demo-campus-archive',
+    })
+  : getApps()[0];
+
 const db = getFirestore(app);
-
-// Always connect to emulator if running seed script in local environment
-const emulatorPort = parseInt(process.env.NEXT_PUBLIC_EMULATOR_FIRESTORE_PORT || '8080', 10);
-try {
-  connectFirestoreEmulator(db, 'localhost', emulatorPort);
-  console.log(`📡 Connected to Firestore emulator on port ${emulatorPort}`);
-} catch {
-  // Already connected or live
-}
+console.log(`📡 Connected to Firestore emulator at ${process.env.FIRESTORE_EMULATOR_HOST}`);
 
 // 1. Five Core Statutory & Co-Curricular Committees
 export const SEED_COMMITTEES: Committee[] = [
@@ -774,19 +764,19 @@ async function seedFirestoreDatabase() {
   // 1. Seed Committees
   console.log(`📂 Seeding ${SEED_COMMITTEES.length} Committees...`);
   for (const committee of SEED_COMMITTEES) {
-    await setDoc(doc(db, 'committees', committee.id), committee);
+    await db.collection('committees').doc(committee.id).set(committee);
   }
 
   // 2. Seed Users
   console.log(`👤 Seeding ${SEED_USERS.length} Users across all roles...`);
   for (const user of SEED_USERS) {
-    await setDoc(doc(db, 'users', user.uid), user);
+    await db.collection('users').doc(user.uid).set(user);
   }
 
   // 3. Seed Events
   console.log(`📅 Seeding ${SEED_EVENTS.length} Events across all lifecycle statuses...`);
   for (const event of SEED_EVENTS) {
-    await setDoc(doc(db, 'events', event.id), event);
+    await db.collection('events').doc(event.id).set(event);
   }
 
   console.log('✅ Firestore Database successfully populated with realistic institutional seed data!');
