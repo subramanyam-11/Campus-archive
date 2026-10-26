@@ -42,8 +42,13 @@ export default function SignInPage() {
       }
       router.push('/dashboard');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Authentication failed. Please verify credentials.';
-      setError(message);
+      const rawMsg = err instanceof Error ? err.message : String(err);
+      if (rawMsg.includes('network-request-failed')) {
+        setError('Firebase Emulator is offline or unreachable on port 9099. Use the Quick Dev Login buttons below to enter directly.');
+      } else {
+        const message = err instanceof Error ? err.message : 'Authentication failed. Please verify credentials.';
+        setError(message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -55,10 +60,17 @@ export default function SignInPage() {
     try {
       try {
         await loginWithEmail(defaultEmail, 'collegiate2024');
-      } catch {
-        // Create if does not exist in emulator
-        await registerWithEmail(defaultEmail, 'collegiate2024', `${devRole.toUpperCase()} Officer`, devRole);
+      } catch (loginErr: unknown) {
+        const msg = loginErr instanceof Error ? loginErr.message : '';
+        if (!msg.includes('network-request-failed')) {
+          try {
+            await registerWithEmail(defaultEmail, 'collegiate2024', `${devRole.toUpperCase()} Officer`, devRole);
+          } catch {
+            // Proceed to local role session fallback
+          }
+        }
       }
+
       await switchDevRole(devRole);
       
       // Route based on role
@@ -67,8 +79,12 @@ export default function SignInPage() {
       else if (devRole === 'student') router.push('/student');
       else router.push('/dashboard');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Dev login failed.';
-      setError(message);
+      console.warn('Dev login fallback activated:', err);
+      await switchDevRole(devRole);
+      if (devRole === 'head') router.push('/head');
+      else if (devRole === 'faculty') router.push('/faculty');
+      else if (devRole === 'student') router.push('/student');
+      else router.push('/dashboard');
     } finally {
       setIsLoading(false);
     }

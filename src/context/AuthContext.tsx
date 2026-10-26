@@ -129,8 +129,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const switchDevRole = async (newRole: UserRole) => {
-    if (!profile) return;
-    const updated = { ...profile, role: newRole };
+    const baseProfile: UserProfile = profile || {
+      uid: `dev-${newRole}-uid`,
+      email: `${newRole}@college.edu`,
+      displayName: `${newRole.toUpperCase()} Officer`,
+      role: newRole,
+      department: 'Computer Science & Engineering',
+      createdAt: new Date().toISOString(),
+    };
+    const updated = { ...baseProfile, role: newRole };
     setProfile(updated);
     if (user) {
       try {
