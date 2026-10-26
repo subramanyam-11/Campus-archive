@@ -1,0 +1,53 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isUnderMaxSize(maxMegabytes) {
+      return request.resource.size < maxMegabytes * 1024 * 1024;
+    }
+
+    function isValidDocumentType() {
+      return request.resource.contentType.matches('application/pdf') ||
+             request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType.matches('application/zip') ||
+             request.resource.contentType.matches('text/csv') ||
+             request.resource.contentType.matches('application/vnd.*');
+    }
+
+    // Public / Shared Verification Certificates
+    match /certificates/{certFile} {
+      allow read: if true;
+      allow write: if isSignedIn() && isUnderMaxSize(5) && request.resource.contentType == 'application/pdf';
+    }
+
+    // Event Documentation & Photo Galleries
+    match /events/{eventId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isUnderMaxSize(25) && isValidDocumentType();
+      allow delete: if isSignedIn();
+    }
+
+    // Committee Charters & Official Documents
+    match /committees/{committeeId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isUnderMaxSize(20) && isValidDocumentType();
+      allow delete: if isSignedIn();
+    }
+
+    // Upload Ingestion Staging & Archives
+    match /staging/{uploadId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isUnderMaxSize(50) && isValidDocumentType();
+      allow delete: if isSignedIn();
+    }
+
+    // Default deny for unmatched storage paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

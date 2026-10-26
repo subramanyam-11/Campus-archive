@@ -1,0 +1,156 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getUserRole() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? getUserData().role
+        : 'student';
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (getUserRole() == 'principal' || getUserRole() == 'iqac');
+    }
+
+    function isFaculty() {
+      return isSignedIn() && (getUserRole() == 'faculty' || isAdmin());
+    }
+
+    function isCommitteeHead() {
+      return isSignedIn() && (getUserRole() == 'head' || isAdmin());
+    }
+
+    function isHeadOfCommittee(committeeId) {
+      return isCommitteeHead() && (
+        isAdmin() ||
+        (getUserData().committeeIds != null && committeeId in getUserData().committeeIds)
+      );
+    }
+
+    // --- Users Collection ---
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId)
+        // Non-admins cannot elevate their own role
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']))
+        || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // --- Committees Collection ---
+    match /committees/{committeeId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // --- Events Collection ---
+    match /events/{eventId} {
+      // Students can view published/approved events; staff can view all
+      allow read: if isSignedIn() && (
+        resource.data.status in ['Approved', 'Cleared'] ||
+        ! (getUserRole() == 'student')
+      );
+
+      // Creation by Committee Heads (for their assigned committee) or Admin
+      allow create: if isCommitteeHead()
+        && request.resource.data.title is string
+        && request.resource.data.committeeCode is string
+        && (request.resource.data.status in ['Draft', 'Pending']);
+
+      // Update permissions with strict field-level restrictions
+      allow update: if isSignedIn() && (
+        // Admins have full rights
+        isAdmin() ||
+        // Heads can edit draft/rejected/pending events for their committee
+        (
+          isHeadOfCommittee(resource.data.committeeCode) &&
+          resource.data.status in ['Draft', 'Pending', 'Changes Requested'] &&
+          // Cannot self-approve
+          request.resource.data.status != 'Approved'
+        ) ||
+        // Faculty conveners can approve/reject/request changes and add review remarks
+        (
+          isFaculty() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'facultyComments', 'timeline', 'updatedAt'])
+        ) ||
+        // Post-event: Heads can submit attendance, photos, and ATR for approved events
+        (
+          isHeadOfCommittee(resource.data.committeeCode) &&
+          resource.data.status in ['Approved', 'Overdue (ATR Pending)'] &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attendanceValidated', 'attendanceTurnoutPercent', 'outcomesAtr', 'photos', 'dossierPdfUrl', 'dossierSha256', 'status', 'updatedAt'])
+        )
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // --- Enrolments Collection ---
+    match /enrolments/{enrolmentId} {
+      allow read: if isSignedIn();
+      // Students can only enrol themselves
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'Enrolled';
+      
+      // Students can withdraw themselves; Heads/Faculty can mark attendance
+      allow update: if isSignedIn() && (
+        (isOwner(resource.data.userId) && request.resource.data.status == 'Withdrawn') ||
+        isFaculty() ||
+        isCommitteeHead() ||
+        isAdmin()
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // --- Certificates Collection ---
+    match /certificates/{certId} {
+      // Public /verify endpoint can read certificates; students can read own; staff can read all
+      allow read: if true;
+      allow create, update: if isFaculty() || isCommitteeHead() || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // --- Roster Collection ---
+    match /roster/{memberId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isCommitteeHead() || isAdmin();
+    }
+
+    // --- Archive Records ---
+    match /archive_records/{recordId} {
+      allow read: if isSignedIn();
+      allow create, update: if isCommitteeHead() || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // --- Audit Logs (Append-Only) ---
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if false; // Immutable audit trail
+    }
+
+    // --- Notifications Collection ---
+    match /notifications/{notifId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isOwner(resource.data.userId);
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+  }
+}
