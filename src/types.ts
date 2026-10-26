@@ -197,6 +197,20 @@ export interface EventPhoto {
   sha256Hash?: string;
 }
 
+export type EventCategoryType =
+  | 'symposium'
+  | 'hackathon'
+  | 'outreach'
+  | 'course'
+  | 'conclave'
+  | 'social'
+  | 'workshop'
+  | 'conference'
+  | 'competition'
+  | 'cultural';
+
+export type NaacCategory = string;
+
 export interface EventItem {
   id: string;
   code: string;
@@ -207,7 +221,7 @@ export interface EventItem {
   department: string;
   convener: string;
   category: string;
-  categoryType: 'symposium' | 'hackathon' | 'outreach' | 'course' | 'conclave' | 'social';
+  categoryType: EventCategoryType;
   dateStr: string;
   rawDate: string;
   venue: string;
@@ -243,7 +257,18 @@ export const EventItemSchema = z.object({
   department: z.string(),
   convener: z.string(),
   category: z.string(),
-  categoryType: z.enum(['symposium', 'hackathon', 'outreach', 'course', 'conclave', 'social']),
+  categoryType: z.enum([
+    'symposium',
+    'hackathon',
+    'outreach',
+    'course',
+    'conclave',
+    'social',
+    'workshop',
+    'conference',
+    'competition',
+    'cultural',
+  ]),
   dateStr: z.string(),
   rawDate: z.string(),
   venue: z.string(),
@@ -404,4 +429,36 @@ export const EnrolmentItemSchema = z.object({
   feedbackSubmitted: z.boolean().optional(),
   certificateId: z.string().optional(),
   certificateUrl: z.string().optional(),
+});
+
+export interface CertificateItem {
+  id: string;
+  eventId: string;
+  eventTitle: string;
+  eventDate: string;
+  committeeName: string;
+  studentUid: string;
+  studentName: string;
+  studentPrn: string;
+  issuedAt: string;
+  sha256Hash: string;
+  qrCodeData: string;
+  status: 'Valid' | 'Revoked';
+  downloadUrl?: string;
+}
+
+export const CertificateItemSchema = z.object({
+  id: z.string(),
+  eventId: z.string(),
+  eventTitle: z.string(),
+  eventDate: z.string(),
+  committeeName: z.string(),
+  studentUid: z.string(),
+  studentName: z.string(),
+  studentPrn: z.string(),
+  issuedAt: z.string(),
+  sha256Hash: z.string(),
+  qrCodeData: z.string(),
+  status: z.enum(['Valid', 'Revoked']),
+  downloadUrl: z.string().optional(),
 });

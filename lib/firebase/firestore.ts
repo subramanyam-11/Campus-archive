@@ -10,9 +10,10 @@ import {
   serverTimestamp,
   QueryConstraint,
   DocumentData,
+  where,
 } from 'firebase/firestore';
 import { db } from './config';
-import type { Committee, EventItem, ArchiveRecord, RosterMember, UserProfile } from '@/src/types';
+import type { Committee, EventItem, ArchiveRecord, RosterMember, UserProfile, EnrolmentItem, CertificateItem } from '@/src/types';
 
 export const COLLECTIONS = {
   USERS: 'users',
@@ -134,3 +135,83 @@ export async function logAuditEntry(entry: {
     rawDate: new Date().toISOString(),
   });
 }
+
+// Enrolment Helpers
+export async function getEnrolments(eventId?: string, userId?: string): Promise<EnrolmentItem[]> {
+  const constraints: QueryConstraint[] = [];
+  if (eventId) constraints.push(where('eventId', '==', eventId));
+  if (userId) constraints.push(where('userId', '==', userId));
+  const q = query(collection(db, COLLECTIONS.ENROLMENTS), ...constraints);
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as EnrolmentItem);
+}
+
+export async function saveEnrolment(enrolment: EnrolmentItem): Promise<void> {
+  await setDoc(doc(db, COLLECTIONS.ENROLMENTS, enrolment.id), {
+    ...enrolment,
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+}
+
+export async function updateEnrolmentFields(id: string, fields: Partial<EnrolmentItem>): Promise<void> {
+  await updateDoc(doc(db, COLLECTIONS.ENROLMENTS, id), {
+    ...fields,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// Certificate Helpers
+export async function getCertificates(userId?: string): Promise<CertificateItem[]> {
+  const constraints: QueryConstraint[] = [];
+  if (userId) constraints.push(where('studentUid', '==', userId));
+  const q = query(collection(db, COLLECTIONS.CERTIFICATES), ...constraints);
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as CertificateItem);
+}
+
+export async function getCertificateById(id: string): Promise<CertificateItem | null> {
+  const snap = await getDoc(doc(db, COLLECTIONS.CERTIFICATES, id));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() } as CertificateItem;
+}
+
+export async function saveCertificate(cert: CertificateItem): Promise<void> {
+  await setDoc(doc(db, COLLECTIONS.CERTIFICATES, cert.id), {
+    ...cert,
+    createdAt: serverTimestamp(),
+  }, { merge: true });
+}
+
+// Notifications Helpers
+export interface AppNotification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: 'event' | 'approval' | 'certificate' | 'system';
+  read: boolean;
+  link?: string;
+  timestamp?: string;
+}
+
+export async function getNotifications(userId: string): Promise<AppNotification[]> {
+  const q = query(collection(db, COLLECTIONS.NOTIFICATIONS), where('userId', '==', userId));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as AppNotification);
+}
+
+export async function createNotification(notif: Omit<AppNotification, 'id'>): Promise<void> {
+  const notifRef = doc(collection(db, COLLECTIONS.NOTIFICATIONS));
+  await setDoc(notifRef, {
+    ...notif,
+    id: notifRef.id,
+    timestamp: serverTimestamp(),
+  });
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  await updateDoc(doc(db, COLLECTIONS.NOTIFICATIONS, id), {
+    read: true,
+  });
+}
+
