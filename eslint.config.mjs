@@ -13,7 +13,7 @@ const eslintConfig = defineConfig([
     "cceas-portal-archive/**",
     "stitch_export/**",
     "screen1.html",
-    "functions/lib/**",
+    "functions/**",
   ]),
 ]);
 
