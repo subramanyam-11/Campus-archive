@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/src/context/AuthContext";
+import { AppProvider } from "@/src/components/AppContext";
 
 export const metadata: Metadata = {
   title: "CampusArchive - Institutional Event & Committee Repository",
@@ -31,7 +32,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-full flex flex-col font-sans">
         <AuthProvider>
-          {children}
+          <AppProvider>
+            {children}
+          </AppProvider>
         </AuthProvider>
       </body>
     </html>

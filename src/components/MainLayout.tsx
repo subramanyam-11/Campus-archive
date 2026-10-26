@@ -7,7 +7,7 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { NewEventModal } from './NewEventModal';
 import { RegisterCommitteeModal } from './RegisterCommitteeModal';
-import { AppProvider, useAppContext } from './AppContext';
+import { useAppContext } from './AppContext';
 
 const LayoutInner = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
@@ -81,10 +81,6 @@ const LayoutInner = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const MainLayout = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <AppProvider>
-      <LayoutInner>{children}</LayoutInner>
-    </AppProvider>
-  );
+  return <LayoutInner>{children}</LayoutInner>;
 };
 
