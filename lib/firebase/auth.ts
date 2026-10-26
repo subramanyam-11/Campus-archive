@@ -34,7 +34,6 @@ export const signInWithGoogle = async (): Promise<User> => {
     return user;
   } catch (error) {
     const err = error as Error;
-    console.error("Error signing in with Google:", err.message);
     throw err;
   }
 };
@@ -45,7 +44,6 @@ export const signInWithEmail = async (email: string, pass: string): Promise<User
     return cred.user;
   } catch (error) {
     const err = error as Error;
-    console.error("Error signing in with Email/Password:", err.message);
     throw err;
   }
 };
@@ -59,7 +57,6 @@ export const signUpWithEmail = async (email: string, pass: string, displayName: 
     return cred.user;
   } catch (error) {
     const err = error as Error;
-    console.error("Error signing up with Email/Password:", err.message);
     throw err;
   }
 };
@@ -69,7 +66,6 @@ export const signOut = async (): Promise<void> => {
     await firebaseSignOut(auth);
   } catch (error) {
     const err = error as Error;
-    console.error("Error signing out:", err.message);
     throw err;
   }
 };
