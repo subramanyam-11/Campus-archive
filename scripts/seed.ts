@@ -1,9 +1,11 @@
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import type { Committee, EventItem, UserProfile, EventStatus } from '../src/types';
 
-// Connect to Firestore emulator for seeding
+// Connect to Firestore & Auth emulators for seeding
 process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8080';
+process.env.FIREBASE_AUTH_EMULATOR_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST || '127.0.0.1:9099';
 
 const app = getApps().length === 0
   ? initializeApp({
@@ -12,7 +14,9 @@ const app = getApps().length === 0
   : getApps()[0];
 
 const db = getFirestore(app);
+const auth = getAuth(app);
 console.log(`📡 Connected to Firestore emulator at ${process.env.FIRESTORE_EMULATOR_HOST}`);
+console.log(`🔐 Connected to Auth emulator at ${process.env.FIREBASE_AUTH_EMULATOR_HOST}`);
 
 // 1. Five Core Statutory & Co-Curricular Committees
 export const SEED_COMMITTEES: Committee[] = [
@@ -768,8 +772,28 @@ async function seedFirestoreDatabase() {
   }
 
   // 2. Seed Users
-  console.log(`👤 Seeding ${SEED_USERS.length} Users across all roles...`);
+  console.log(`👤 Seeding ${SEED_USERS.length} Users across Auth & Firestore...`);
   for (const user of SEED_USERS) {
+    try {
+      await auth.createUser({
+        uid: user.uid,
+        email: user.email,
+        password: 'collegiate2024',
+        displayName: user.displayName,
+      });
+      await auth.setCustomUserClaims(user.uid, { role: user.role });
+    } catch {
+      // User might already exist in Auth emulator
+      try {
+        await auth.updateUser(user.uid, {
+          password: 'collegiate2024',
+          displayName: user.displayName,
+        });
+        await auth.setCustomUserClaims(user.uid, { role: user.role });
+      } catch {
+        // ignore update errors
+      }
+    }
     await db.collection('users').doc(user.uid).set(user);
   }
 

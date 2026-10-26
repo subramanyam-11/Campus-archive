@@ -43,8 +43,19 @@ export default function SignInPage() {
       router.push('/dashboard');
     } catch (err: unknown) {
       const rawMsg = err instanceof Error ? err.message : String(err);
-      if (rawMsg.includes('network-request-failed')) {
+      if (rawMsg.includes('user-not-found')) {
+        try {
+          // In local dev/demo mode, auto-create the account if user typed credentials on sign-in tab
+          await registerWithEmail(email, password, displayName || email.split('@')[0], selectedRole || 'student');
+          router.push('/dashboard');
+          return;
+        } catch {
+          setError(`No account found for "${email}". Switch to "Register New Account" tab above, or use pre-seeded accounts (password: collegiate2024).`);
+        }
+      } else if (rawMsg.includes('network-request-failed')) {
         setError('Firebase Emulator is offline or unreachable on port 9099. Use the Quick Dev Login buttons below to enter directly.');
+      } else if (rawMsg.includes('wrong-password') || rawMsg.includes('invalid-credential')) {
+        setError('Invalid password. For seeded accounts, default password is: collegiate2024');
       } else {
         const message = err instanceof Error ? err.message : 'Authentication failed. Please verify credentials.';
         setError(message);
