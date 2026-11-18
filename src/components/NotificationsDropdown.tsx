@@ -9,62 +9,65 @@ import {
   type AppNotification,
 } from '@/lib/firebase/firestore';
 
+const INITIAL_NOTIFICATIONS: AppNotification[] = [
+  {
+    id: 'notif-1',
+    userId: 'guest',
+    title: 'New Event Approval Request',
+    message: 'ACM Student Chapter submitted "National Symposium on Quantum Computing" for faculty review.',
+    type: 'approval',
+    read: false,
+    link: '/faculty',
+    timestamp: '10m ago',
+  },
+  {
+    id: 'notif-2',
+    userId: 'guest',
+    title: 'Certificate Dispatched',
+    message: 'Your certificate for "Deep Learning Bootcamp" is verified and ready for download.',
+    type: 'certificate',
+    read: false,
+    link: '/student/certificates',
+    timestamp: '2h ago',
+  },
+  {
+    id: 'notif-3',
+    userId: 'guest',
+    title: 'Statutory ATR Clearance Reminder',
+    message: 'Overdue Action Taken Report for Hackathon 2024 is pending IQAC compliance sign-off.',
+    type: 'event',
+    read: true,
+    link: '/head',
+    timestamp: '1d ago',
+  },
+];
+
 export function NotificationsDropdown() {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const userId = user?.uid || 'current_user';
-
   useEffect(() => {
+    if (!user) return;
+
+    let isMounted = true;
     async function loadNotifs() {
       try {
-        const records = await getNotifications(userId);
-        if (records.length > 0) {
+        const records = await getNotifications(user!.uid);
+        if (isMounted && records.length > 0) {
           setNotifications(records);
-        } else {
-          // Initial notification records for rich user experience
-          setNotifications([
-            {
-              id: 'notif-1',
-              userId,
-              title: 'New Event Approval Request',
-              message: 'ACM Student Chapter submitted "National Symposium on Quantum Computing" for faculty review.',
-              type: 'approval',
-              read: false,
-              link: '/faculty',
-              timestamp: '10m ago',
-            },
-            {
-              id: 'notif-2',
-              userId,
-              title: 'Certificate Dispatched',
-              message: 'Your certificate for "Deep Learning Bootcamp" is verified and ready for download.',
-              type: 'certificate',
-              read: false,
-              link: '/student/certificates',
-              timestamp: '2h ago',
-            },
-            {
-              id: 'notif-3',
-              userId,
-              title: 'Statutory ATR Clearance Reminder',
-              message: 'Overdue Action Taken Report for Hackathon 2024 is pending IQAC compliance sign-off.',
-              type: 'event',
-              read: true,
-              link: '/head',
-              timestamp: '1d ago',
-            },
-          ]);
         }
-      } catch (err) {
-        console.error('Failed to load notifications:', err);
+      } catch {
+        // Retain initial notifications fallback
       }
     }
 
     loadNotifs();
-  }, [userId]);
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   // Click outside to close
   useEffect(() => {

@@ -12,11 +12,13 @@ service cloud.firestore {
     }
 
     function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+        : {};
     }
 
     function getUserRole() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && ('role' in getUserData())
         ? getUserData().role
         : 'student';
     }
@@ -36,7 +38,11 @@ service cloud.firestore {
     function isHeadOfCommittee(committeeId) {
       return isCommitteeHead() && (
         isAdmin() ||
-        (getUserData().committeeIds != null && committeeId in getUserData().committeeIds)
+        (
+          'committeeIds' in getUserData() &&
+          getUserData().committeeIds != null &&
+          committeeId in getUserData().committeeIds
+        )
       );
     }
 
@@ -55,6 +61,16 @@ service cloud.firestore {
     match /committees/{committeeId} {
       allow read: if isSignedIn();
       allow create, update, delete: if isAdmin();
+
+      // Subcollection: Committee Members / Roster
+      match /members/{memberId} {
+        allow read: if isSignedIn();
+        allow create, update, delete: if isSignedIn() && (
+          isAdmin() ||
+          getUserRole() == 'iqac' ||
+          isHeadOfCommittee(committeeId)
+        );
+      }
     }
 
     // --- Events Collection ---
@@ -147,10 +163,19 @@ service cloud.firestore {
 
     // --- Notifications Collection ---
     match /notifications/{notifId} {
-      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow get: if isSignedIn() && (
+        isAdmin() ||
+        (resource.data.userId == request.auth.uid)
+      );
+      allow list: if isSignedIn() && (
+        isAdmin() ||
+        (resource == null || resource.data.userId == request.auth.uid)
+      );
       allow create: if isSignedIn();
-      allow update: if isOwner(resource.data.userId);
-      allow delete: if isOwner(resource.data.userId) || isAdmin();
+      allow update, delete: if isSignedIn() && (
+        isAdmin() ||
+        (resource.data.userId == request.auth.uid)
+      );
     }
   }
 }

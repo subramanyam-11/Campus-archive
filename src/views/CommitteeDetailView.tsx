@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Committee, ViewType, EventItem } from '../types';
+import { useAppContext } from '../components/AppContext';
 
 interface CommitteeDetailViewProps {
   committee?: Committee;
@@ -18,9 +20,16 @@ export const CommitteeDetailView: React.FC<CommitteeDetailViewProps> = ({
   onSelectEvent,
   initialTab = 'overview',
 }) => {
+  const router = useRouter();
+  const { getCommitteeRoster } = useAppContext();
   const [activeTab, setActiveTab] = useState<'overview' | 'roster' | 'events' | 'documents'>(initialTab);
   const [selectedAy, setSelectedAy] = useState('AY 2024–25 (Current Active)');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const committeeRoster = committee ? getCommitteeRoster(committee.id, 'AY 2024–25') : [];
+  const activeMembersCount = committeeRoster.length > 0
+    ? committeeRoster.filter((m) => m.status === 'active' || m.status === 'Active').length
+    : (committee?.activeMembersCount || 0);
 
   if (!committee) {
     return (
@@ -150,7 +159,7 @@ export const CommitteeDetailView: React.FC<CommitteeDetailViewProps> = ({
                 <span className="material-symbols-outlined text-outline text-[18px]">domain</span>
                 <span>{committee.department}</span>
                 <span className="text-outline-variant">•</span>
-                <span>Affiliation ID: ACM-IN-88391</span>
+                <span>Affiliation ID: {committee.metrics.grantId || `${committee.code}-AFF`}</span>
               </p>
             </div>
 
@@ -199,7 +208,7 @@ export const CommitteeDetailView: React.FC<CommitteeDetailViewProps> = ({
 
               {/* Roster Tab */}
               <button
-                onClick={() => onNavigate('roster')}
+                onClick={() => router.push(`/committees/${committee.id}/roster`)}
                 className="px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface flex items-center gap-2.5 transition-colors text-left"
                 type="button"
               >
@@ -207,7 +216,7 @@ export const CommitteeDetailView: React.FC<CommitteeDetailViewProps> = ({
                 <div className="flex flex-col text-left">
                   <span className="text-label-md leading-tight font-medium text-on-surface">Roster</span>
                   <span className="text-[11px] text-outline leading-tight">
-                    {committee.activeMembersCount} Members • View full roster on Screen 5 →
+                    {activeMembersCount} Members • Manage roster →
                   </span>
                 </div>
               </button>
@@ -366,7 +375,7 @@ export const CommitteeDetailView: React.FC<CommitteeDetailViewProps> = ({
                             <span className="material-symbols-outlined text-[18px]">mail</span>
                           </button>
                           <button
-                            onClick={() => onNavigate('roster')}
+                            onClick={() => router.push(`/committees/${committee.id}/roster`)}
                             className="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container transition-colors"
                             title="View Dossier Record"
                             type="button"
@@ -379,18 +388,18 @@ export const CommitteeDetailView: React.FC<CommitteeDetailViewProps> = ({
                   </div>
                 </div>
 
-                {/* Screen 5 Deep Dive Redirection Callout */}
+                {/* Deep Dive Redirection Callout */}
                 <div className="mt-space-md pt-space-sm flex items-center justify-between bg-surface-container-low border border-outline-variant/30 p-space-sm rounded-lg flex-wrap gap-2">
                   <div className="flex items-center gap-2 text-on-surface-variant text-[12px]">
                     <span className="material-symbols-outlined text-outline text-[18px]">groups_3</span>
-                    <span>Total {committee.activeMembersCount} verified committee student members active for AY 2024–25</span>
+                    <span>Total {activeMembersCount} verified committee members active for AY 2024–25</span>
                   </div>
                   <button
-                    onClick={() => onNavigate('roster')}
+                    onClick={() => router.push(`/committees/${committee.id}/roster`)}
                     className="h-8 px-3 rounded-lg bg-surface-container-lowest hover:bg-surface hover:text-primary text-on-surface text-[12px] font-semibold flex items-center gap-1 transition-colors shadow-sm border border-outline-variant/40"
                     type="button"
                   >
-                    <span>Open Complete Roster Table (Screen 5)</span>
+                    <span>Open Complete Roster Table</span>
                     <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                   </button>
                 </div>

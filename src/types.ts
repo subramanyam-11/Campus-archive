@@ -307,26 +307,36 @@ export const EventItemSchema = z.object({
 
 export interface RosterMember {
   id: string;
+  committeeId: string;
   name: string;
   email: string;
   prn: string;
   department: string;
+  designation: string;
   role: string;
-  tenure: string;
-  status: 'Active' | 'Invited';
-  initials: string;
+  tenureStart: string;
+  tenureEnd: string;
+  academicYear: string;
+  status: 'active' | 'invited' | 'removed' | 'Active' | 'Invited' | 'Removed';
+  initials?: string;
+  tenure?: string;
 }
 
 export const RosterMemberSchema = z.object({
   id: z.string(),
-  name: z.string(),
-  email: z.string().email(),
-  prn: z.string(),
-  department: z.string(),
-  role: z.string(),
-  tenure: z.string(),
-  status: z.enum(['Active', 'Invited']),
-  initials: z.string(),
+  committeeId: z.string().min(1, 'Committee ID is required'),
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Valid institutional email is required'),
+  prn: z.string().min(1, 'PRN is required'),
+  department: z.string().min(1, 'Department is required'),
+  designation: z.string().default('Member'),
+  role: z.string().min(1, 'Role is required'),
+  tenureStart: z.string().default('2024-07-01'),
+  tenureEnd: z.string().default('2025-06-30'),
+  academicYear: z.string().default('AY 2024–25'),
+  status: z.enum(['active', 'invited', 'removed', 'Active', 'Invited', 'Removed']).default('active'),
+  initials: z.string().optional(),
+  tenure: z.string().optional(),
 });
 
 export interface StagingItem {

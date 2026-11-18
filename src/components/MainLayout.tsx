@@ -28,6 +28,7 @@ const LayoutInner = ({ children }: { children: React.ReactNode }) => {
     if (path.startsWith('/admin/reports') || path === '/reports') return 'reports';
     if (path.startsWith('/archive')) return 'archive-and-search';
     if (path.startsWith('/upload')) return 'upload-data';
+    if (path.startsWith('/committees/') && path.endsWith('/roster')) return 'roster';
     if (path.startsWith('/committees/') && path !== '/committees') return 'committee-detail';
     if (path.startsWith('/events/') && path !== '/events') return 'event-detail';
     const firstSegment = path.split('/')[1];
@@ -35,6 +36,8 @@ const LayoutInner = ({ children }: { children: React.ReactNode }) => {
   };
 
   const currentView = getActiveView(pathname);
+  const commIdMatch = pathname.match(/^\/committees\/([^/]+)/);
+  const routeCommittee = commIdMatch ? committees.find((c) => c.id === commIdMatch[1]) : undefined;
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
   return (
@@ -50,7 +53,8 @@ const LayoutInner = ({ children }: { children: React.ReactNode }) => {
       <div className="lg:pl-64 flex flex-col min-h-screen">
         <Header
           currentView={currentView}
-          selectedCommitteeName={selectedCommittee?.name}
+          selectedCommitteeId={routeCommittee?.id || selectedCommittee?.id}
+          selectedCommitteeName={routeCommittee?.name || selectedCommittee?.name}
           selectedEventTitle={selectedEvent?.title}
           activePersona={activePersona}
           onSelectPersona={setActivePersona}

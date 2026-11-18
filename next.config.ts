@@ -33,6 +33,11 @@ const nextConfig: NextConfig = {
         destination: '/events',
         permanent: false,
       },
+      {
+        source: '/roster',
+        destination: '/committees',
+        permanent: false,
+      },
     ];
   },
 };

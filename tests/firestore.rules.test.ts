@@ -40,13 +40,19 @@ async function runRulesTestSuite() {
   }
 
   // Pre-seed test users into Firestore in the test environment
+  await testEnv.clearFirestore();
   await testEnv.withSecurityRulesDisabled(async (context) => {
     const adminDb = context.firestore();
     await adminDb.doc('users/alice-student').set({ role: 'student', email: 'alice@college.edu' });
     await adminDb.doc('users/bob-head').set({ role: 'head', email: 'bob@college.edu', committeeIds: ['com-cse-09'] });
     await adminDb.doc('users/charlie-faculty').set({ role: 'faculty', email: 'charlie@college.edu' });
     await adminDb.doc('users/diana-principal').set({ role: 'principal', email: 'diana@college.edu' });
+    await adminDb.doc('users/eva-iqac').set({ role: 'iqac', email: 'eva@college.edu' });
     
+    // Seed committees
+    await adminDb.doc('committees/com-cse-09').set({ code: 'COM-CSE-09', name: 'ACM Student Chapter' });
+    await adminDb.doc('committees/com-stat-01').set({ code: 'COM-STAT-01', name: 'IQAC Cell' });
+
     // Seed test event in Approved state
     await adminDb.doc('events/evt-approved').set({
       title: 'Approved Hackathon',
@@ -160,6 +166,74 @@ async function runRulesTestSuite() {
 
   await test('Principal can read audit logs', async () => {
     await assertSucceeds(adminDb.collection('audit_logs').get());
+  });
+
+  // 6. Committee Roster / Members Subcollection Checks
+  await test('Signed-in student can read committee members', async () => {
+    await assertSucceeds(studentDb.collection('committees/com-cse-09/members').get());
+  });
+
+  await test('Committee Head of A can add members to Committee A', async () => {
+    await assertSucceeds(
+      headDb.doc('committees/com-cse-09/members/member-1').set({
+        name: 'Rohan Sharma',
+        role: 'Chairperson',
+        department: 'Computer Engineering',
+        status: 'active',
+      })
+    );
+  });
+
+  await test('Committee Head of A CANNOT write members to Committee B (Cross-committee isolation)', async () => {
+    await assertFails(
+      headDb.doc('committees/com-stat-01/members/member-fake').set({
+        name: 'Intruder',
+        role: 'Member',
+        department: 'Governance',
+        status: 'active',
+      })
+    );
+  });
+
+  const iqacContext = testEnv.authenticatedContext('eva-iqac');
+  const iqacDb = iqacContext.firestore();
+
+  await test('IQAC coordinator can write members to any committee', async () => {
+    await assertSucceeds(
+      iqacDb.doc('committees/com-stat-01/members/member-iqac-1').set({
+        name: 'Dr. Ramesh K. Sharma',
+        role: 'Coordinator',
+        department: 'Academic Directorate',
+        status: 'active',
+      })
+    );
+  });
+
+  await test('Principal can delete committee members', async () => {
+    await assertSucceeds(
+      adminDb.doc('committees/com-cse-09/members/member-1').delete()
+    );
+  });
+
+  // 7. Notifications Collection Checks
+  await test('Unauthenticated user cannot read or list notifications', async () => {
+    await assertFails(unauthDb.collection('notifications').get());
+  });
+
+  await test('Signed-in student can list their own notifications', async () => {
+    await assertSucceeds(
+      studentDb.collection('notifications').where('userId', '==', 'alice-student').get()
+    );
+  });
+
+  await test('Signed-in student cannot list another user notifications', async () => {
+    await assertFails(
+      studentDb.collection('notifications').where('userId', '==', 'bob-head').get()
+    );
+  });
+
+  await test('Admin can list notifications', async () => {
+    await assertSucceeds(adminDb.collection('notifications').get());
   });
 
   await testEnv.cleanup();

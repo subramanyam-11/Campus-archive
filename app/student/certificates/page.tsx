@@ -7,65 +7,68 @@ import { getCertificates } from '@/lib/firebase/firestore';
 import { generateCertificatePdf } from '@/lib/pdf/generateCertificate';
 import type { CertificateItem } from '@/src/types';
 
+const DEFAULT_CERTS: CertificateItem[] = [
+  {
+    id: 'CERT-EV-8901-0042',
+    eventId: 'evt-01',
+    eventTitle: 'National Symposium on Quantum Computing & Neuromorphic Systems',
+    eventDate: '20 Nov 2024',
+    committeeName: 'ACM Student Chapter',
+    studentUid: 'stu_dev_01',
+    studentName: 'Aarav Sharma',
+    studentPrn: '2024BCSE042',
+    issuedAt: '24 Nov 2024',
+    sha256Hash: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+    qrCodeData: '/verify/CERT-EV-8901-0042',
+    status: 'Valid',
+  },
+  {
+    id: 'CERT-EV-8902-0042',
+    eventId: 'evt-02',
+    eventTitle: 'Deep Learning Bootcamp & AI Accelerators Lab',
+    eventDate: '15 Oct 2024',
+    committeeName: 'IEEE Student Branch',
+    studentUid: 'stu_dev_01',
+    studentName: 'Aarav Sharma',
+    studentPrn: '2024BCSE042',
+    issuedAt: '18 Oct 2024',
+    sha256Hash: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8',
+    qrCodeData: '/verify/CERT-EV-8902-0042',
+    status: 'Valid',
+  },
+];
+
 export default function StudentCertificatesPage() {
-  const { user, profile } = useAuth();
-  const [certificates, setCertificates] = useState<CertificateItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const { user } = useAuth();
+  const [certificates, setCertificates] = useState<CertificateItem[]>(DEFAULT_CERTS);
+  const [loading, setLoading] = useState<boolean>(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const studentUid = user?.uid || 'stu_dev_01';
-  const studentPrn = profile?.prn || '2024BCSE042';
-  const studentName = profile?.displayName || 'Aarav Sharma';
 
   useEffect(() => {
+    if (!user) return;
+
+    let isMounted = true;
     async function loadCerts() {
       try {
+        setLoading(true);
         const records = await getCertificates(studentUid);
-        if (records.length > 0) {
+        if (isMounted && records.length > 0) {
           setCertificates(records);
-        } else {
-          // Fallback mock certificates for demonstration
-          const mockCerts: CertificateItem[] = [
-            {
-              id: 'CERT-EV-8901-0042',
-              eventId: 'evt-01',
-              eventTitle: 'National Symposium on Quantum Computing & Neuromorphic Systems',
-              eventDate: '20 Nov 2024',
-              committeeName: 'ACM Student Chapter',
-              studentUid,
-              studentName,
-              studentPrn,
-              issuedAt: '24 Nov 2024',
-              sha256Hash: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
-              qrCodeData: '/verify/CERT-EV-8901-0042',
-              status: 'Valid',
-            },
-            {
-              id: 'CERT-EV-8902-0042',
-              eventId: 'evt-02',
-              eventTitle: 'Deep Learning Bootcamp & AI Accelerators Lab',
-              eventDate: '15 Oct 2024',
-              committeeName: 'IEEE Student Branch',
-              studentUid,
-              studentName,
-              studentPrn,
-              issuedAt: '18 Oct 2024',
-              sha256Hash: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8',
-              qrCodeData: '/verify/CERT-EV-8902-0042',
-              status: 'Valid',
-            },
-          ];
-          setCertificates(mockCerts);
         }
-      } catch (err) {
-        console.error('Failed to load certificates:', err);
+      } catch {
+        // Keep initial mock certificates
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
 
     loadCerts();
-  }, [studentUid, studentPrn, studentName]);
+    return () => {
+      isMounted = false;
+    };
+  }, [user, studentUid]);
 
   const handleDownloadPdf = async (cert: CertificateItem) => {
     setDownloadingId(cert.id);

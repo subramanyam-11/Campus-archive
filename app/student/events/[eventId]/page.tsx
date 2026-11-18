@@ -41,9 +41,13 @@ export default function StudentEventDetailPage({ params }: PageProps) {
   const studentPrn = profile?.prn || '2024BCSE042';
 
   useEffect(() => {
+    if (!user) return;
+
+    let isMounted = true;
     async function checkStudentEnrolment() {
       try {
         const records = await getEnrolments(eventId);
+        if (!isMounted) return;
         setTotalEnrolledCount(records.length || event?.attendanceValidated || 0);
 
         const myRecord = records.find(
@@ -60,15 +64,18 @@ export default function StudentEventDetailPage({ params }: PageProps) {
             name: myRecord.userName,
           });
           const url = await QRCode.toDataURL(qrPayload, { width: 200, margin: 1 });
-          setQrDataUrl(url);
+          if (isMounted) setQrDataUrl(url);
         }
-      } catch (err) {
-        console.error('Failed to query enrolment:', err);
+      } catch {
+        // Keep initial count
       }
     }
 
     checkStudentEnrolment();
-  }, [eventId, event?.attendanceValidated, studentUid, studentPrn]);
+    return () => {
+      isMounted = false;
+    };
+  }, [user, eventId, studentUid, studentPrn, event?.attendanceValidated]);
 
   const handleEnrol = async () => {
     if (!event) return;

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState } from 'react';
-import { ViewType, UserPersona, Committee, EventItem } from '../types';
-import { USER_PERSONAS, INITIAL_COMMITTEES, INITIAL_EVENTS } from '../data/mockData';
+import { ViewType, UserPersona, Committee, EventItem, RosterMember } from '../types';
+import { USER_PERSONAS, INITIAL_COMMITTEES, INITIAL_EVENTS, COMMITTEE_ROSTERS } from '../data/mockData';
 import { useRouter } from 'next/navigation';
 
 interface AppContextType {
@@ -14,6 +14,11 @@ interface AppContextType {
   setCommittees: (committees: Committee[]) => void;
   selectedCommittee: Committee;
   setSelectedCommittee: (committee: Committee) => void;
+  committeeRosters: Record<string, RosterMember[]>;
+  getCommitteeRoster: (committeeId: string, year?: string) => RosterMember[];
+  addCommitteeMember: (committeeId: string, member: RosterMember) => void;
+  updateCommitteeMember: (committeeId: string, memberId: string, updates: Partial<RosterMember>) => void;
+  removeCommitteeMember: (committeeId: string, memberId: string) => void;
   events: EventItem[];
   setEvents: React.Dispatch<React.SetStateAction<EventItem[]>>;
   selectedEvent: EventItem;
@@ -42,6 +47,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [committees, setCommittees] = useState<Committee[]>(INITIAL_COMMITTEES);
   const [selectedCommittee, setSelectedCommittee] = useState<Committee>(INITIAL_COMMITTEES[0]);
+  const [committeeRosters, setCommitteeRosters] = useState<Record<string, RosterMember[]>>(COMMITTEE_ROSTERS);
   const [events, setEvents] = useState<EventItem[]>(INITIAL_EVENTS);
   const [selectedEvent, setSelectedEvent] = useState<EventItem>(INITIAL_EVENTS[0]);
 
@@ -49,6 +55,42 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [isNewEventModalOpen, setIsNewEventModalOpen] = useState<boolean>(false);
   const [isRegisterCommitteeModalOpen, setIsRegisterCommitteeModalOpen] = useState<boolean>(false);
+
+  const getCommitteeRoster = (committeeId: string, year?: string): RosterMember[] => {
+    const members = committeeRosters[committeeId] || [];
+    if (!year) return members;
+    return members.filter((m) => m.academicYear === year);
+  };
+
+  const addCommitteeMember = (committeeId: string, member: RosterMember) => {
+    setCommitteeRosters((prev) => {
+      const existing = prev[committeeId] || [];
+      return {
+        ...prev,
+        [committeeId]: [...existing, member],
+      };
+    });
+  };
+
+  const updateCommitteeMember = (committeeId: string, memberId: string, updates: Partial<RosterMember>) => {
+    setCommitteeRosters((prev) => {
+      const existing = prev[committeeId] || [];
+      return {
+        ...prev,
+        [committeeId]: existing.map((m) => (m.id === memberId ? { ...m, ...updates } : m)),
+      };
+    });
+  };
+
+  const removeCommitteeMember = (committeeId: string, memberId: string) => {
+    setCommitteeRosters((prev) => {
+      const existing = prev[committeeId] || [];
+      return {
+        ...prev,
+        [committeeId]: existing.filter((m) => m.id !== memberId),
+      };
+    });
+  };
 
   const handleNavigate = (view: ViewType | string) => {
     switch (view) {
@@ -76,7 +118,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         router.push('/upload');
         break;
       case 'roster':
-        router.push('/roster');
+        router.push(selectedCommittee?.id ? `/committees/${selectedCommittee.id}/roster` : '/committees');
         break;
       case 'reports':
         router.push('/admin/reports');
@@ -163,6 +205,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       academicYear, setAcademicYear,
       committees, setCommittees,
       selectedCommittee, setSelectedCommittee,
+      committeeRosters, getCommitteeRoster,
+      addCommitteeMember, updateCommitteeMember, removeCommitteeMember,
       events, setEvents,
       selectedEvent, setSelectedEvent,
       searchQuery, setSearchQuery,

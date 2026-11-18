@@ -24,7 +24,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { view: 'events', label: 'Events', icon: 'event' },
     { view: 'archive-and-search', label: 'Archive & Search', icon: 'folder_special' },
     { view: 'upload-data', label: 'Upload Data', icon: 'upload_file' },
-    { view: 'roster', label: 'Roster', icon: 'badge' },
     { view: 'reports', label: 'Reports', icon: 'analytics' },
     { view: 'settings', label: 'Settings', icon: 'settings' },
   ];

@@ -1,12 +1,5 @@
-'use client';
-import { RosterView } from '@/src/views/RosterView';
-import { useAppContext } from '@/src/components/AppContext';
+import { redirect } from 'next/navigation';
 
-export default function RosterPage() {
-  const { handleNavigate } = useAppContext();
-  return (
-    <RosterView
-      onNavigate={handleNavigate} 
-    />
-  );
+export default function RosterRedirectPage() {
+  redirect('/committees');
 }

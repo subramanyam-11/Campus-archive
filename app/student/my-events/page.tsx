@@ -8,12 +8,40 @@ import { getEnrolments, updateEnrolmentFields, logAuditEntry } from '@/lib/fireb
 import type { EnrolmentItem, EventItem } from '@/src/types';
 import QRCode from 'qrcode';
 
+const DEFAULT_ENROLMENTS: EnrolmentItem[] = [
+  {
+    id: 'enr-101',
+    eventId: 'evt-01',
+    eventTitle: 'National Symposium on Quantum Computing',
+    userId: 'stu_dev_01',
+    userEmail: 'student@campus.edu',
+    userName: 'Aarav Sharma',
+    userPrn: '2024BCSE042',
+    enrolledAt: '2024-11-12 10:30 AM',
+    status: 'Attended',
+    checkInTime: '09:45 AM',
+    certificateId: 'CERT-EV-8901-0042',
+    feedbackSubmitted: true,
+  },
+  {
+    id: 'enr-102',
+    eventId: 'evt-02',
+    eventTitle: 'Deep Learning Bootcamp & AI Lab',
+    userId: 'stu_dev_01',
+    userEmail: 'student@campus.edu',
+    userName: 'Aarav Sharma',
+    userPrn: '2024BCSE042',
+    enrolledAt: '2024-11-14 03:15 PM',
+    status: 'Enrolled',
+  },
+];
+
 export default function StudentMyEventsPage() {
   const { events } = useAppContext();
   const { user, profile } = useAuth();
 
-  const [enrolments, setEnrolments] = useState<EnrolmentItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [enrolments, setEnrolments] = useState<EnrolmentItem[]>(DEFAULT_ENROLMENTS);
+  const [loading, setLoading] = useState<boolean>(false);
   const [tab, setTab] = useState<'All' | 'Enrolled' | 'Attended'>('All');
 
   // QR Pass Modal
@@ -26,54 +54,32 @@ export default function StudentMyEventsPage() {
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
 
   const studentUid = user?.uid || 'stu_dev_01';
-  const studentPrn = profile?.prn || '2024BCSE042';
 
   useEffect(() => {
+    if (!user) return;
+
+    let isMounted = true;
     async function loadMyEvents() {
       try {
+        setLoading(true);
         const records = await getEnrolments(undefined, studentUid);
-        if (records.length > 0) {
+        if (isMounted && records.length > 0) {
           setEnrolments(records);
-        } else {
-          // Provide mock registrations for preview/demo
-          const mockData: EnrolmentItem[] = [
-            {
-              id: 'enr-101',
-              eventId: events[0]?.id || 'evt-01',
-              eventTitle: events[0]?.title || 'National Symposium on Quantum Computing',
-              userId: studentUid,
-              userEmail: user?.email || 'student@campus.edu',
-              userName: profile?.displayName || 'Aarav Sharma',
-              userPrn: studentPrn,
-              enrolledAt: '2024-11-12 10:30 AM',
-              status: 'Attended',
-              checkInTime: '09:45 AM',
-              certificateId: 'CERT-EV-8901-0042',
-              feedbackSubmitted: true,
-            },
-            {
-              id: 'enr-102',
-              eventId: events[1]?.id || 'evt-02',
-              eventTitle: events[1]?.title || 'Deep Learning Bootcamp & AI Lab',
-              userId: studentUid,
-              userEmail: user?.email || 'student@campus.edu',
-              userName: profile?.displayName || 'Aarav Sharma',
-              userPrn: studentPrn,
-              enrolledAt: '2024-11-14 03:15 PM',
-              status: 'Enrolled',
-            },
-          ];
-          setEnrolments(mockData);
         }
-      } catch (err) {
-        console.error('Failed to load my events:', err);
+      } catch {
+        // Retain initial enrolments fallback
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
 
     loadMyEvents();
-  }, [studentUid, studentPrn, user?.email, profile?.displayName, events]);
+    return () => {
+      isMounted = false;
+    };
+  }, [user, studentUid]);
 
   const handleOpenPass = async (enr: EnrolmentItem) => {
     const matchedEvent = events.find((e) => e.id === enr.eventId);

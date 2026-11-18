@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Committee, ViewType } from '../types';
+import { useAppContext } from '../components/AppContext';
 
 interface CommitteesViewProps {
   committees: Committee[];
@@ -13,15 +15,17 @@ interface CommitteesViewProps {
 export const CommitteesView: React.FC<CommitteesViewProps> = ({
   committees,
   onSelectCommittee,
-  onNavigate,
   onOpenRegisterModal,
 }) => {
+  const router = useRouter();
+  const { getCommitteeRoster } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(9);
 
   // Filter logic
   const filtered = committees.filter((comm) => {
@@ -46,13 +50,28 @@ export const CommitteesView: React.FC<CommitteesViewProps> = ({
     return textMatch && deptMatch && catMatch && statusMatch;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedCommittees = filtered.slice(
+    (safeCurrentPage - 1) * rowsPerPage,
+    safeCurrentPage * rowsPerPage
+  );
+
+  const getActiveCount = (comm: Committee): number => {
+    const roster = getCommitteeRoster(comm.id, 'AY 2024–25');
+    if (roster && roster.length > 0) {
+      return roster.filter((m) => m.status === 'active' || m.status === 'Active').length;
+    }
+    return comm.activeMembersCount;
+  };
+
   const handleExportIndex = () => {
     const csvContent =
       'Code,Committee Name,Department,Category,Status,Faculty In-Charge,Active Members\n' +
       committees
         .map(
           (c) =>
-            `"${c.code}","${c.name}","${c.department}","${c.categoryTag}","${c.status}","${c.facultyInCharge.name}","${c.activeMembersCount}"`
+            `"${c.code}","${c.name}","${c.department}","${c.categoryTag}","${c.status}","${c.facultyInCharge.name}","${getActiveCount(c)}"`
         )
         .join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -282,7 +301,7 @@ export const CommitteesView: React.FC<CommitteesViewProps> = ({
       {/* Grid View */}
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-md">
-          {filtered.map((comm) => (
+          {paginatedCommittees.map((comm) => (
             <div
               key={comm.id}
               className={`bg-surface-container-lowest rounded-xl border border-outline-variant/40 p-space-md flex flex-col justify-between shadow-sm hover:shadow-md hover:border-primary/40 transition-all ${
@@ -330,7 +349,7 @@ export const CommitteesView: React.FC<CommitteesViewProps> = ({
                   <div className="flex items-center justify-between pt-1 border-t border-outline-variant/20">
                     <div className="flex items-center gap-1.5 text-on-surface-variant">
                       <span className="material-symbols-outlined text-outline text-[16px]">group</span>
-                      <span className="text-[12px] font-medium">{comm.activeMembersCount} Active Members</span>
+                      <span className="text-[12px] font-medium">{getActiveCount(comm)} Active Members</span>
                     </div>
                     <span className="text-[11px] text-outline">{comm.lastRevised}</span>
                   </div>
@@ -341,7 +360,7 @@ export const CommitteesView: React.FC<CommitteesViewProps> = ({
                 <button
                   onClick={() => {
                     onSelectCommittee(comm);
-                    onNavigate('committee-detail');
+                    router.push(`/committees/${comm.id}`);
                   }}
                   className="font-semibold text-label-md text-primary hover:text-primary-container flex items-center gap-1 transition-colors"
                 >
@@ -351,7 +370,7 @@ export const CommitteesView: React.FC<CommitteesViewProps> = ({
                 <button
                   onClick={() => {
                     onSelectCommittee(comm);
-                    onNavigate('roster');
+                    router.push(`/committees/${comm.id}/roster`);
                   }}
                   className="w-7 h-7 rounded hover:bg-surface-container flex items-center justify-center text-outline hover:text-on-surface transition-colors"
                   title="Quick View Roster"
@@ -378,13 +397,13 @@ export const CommitteesView: React.FC<CommitteesViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/20 text-body-sm text-on-surface">
-              {filtered.map((comm) => (
+              {paginatedCommittees.map((comm) => (
                 <tr key={comm.id} className="hover:bg-surface-container-low/60 transition-colors">
                   <td className="py-3 px-4 font-mono text-[12px] font-semibold text-primary">{comm.code}</td>
                   <td className="py-3 px-4 font-semibold text-on-surface">{comm.name}</td>
                   <td className="py-3 px-4 text-on-surface-variant text-[13px]">{comm.department}</td>
                   <td className="py-3 px-4 text-on-surface text-[13px]">{comm.facultyInCharge.name}</td>
-                  <td className="py-3 px-4 text-center font-medium">{comm.activeMembersCount}</td>
+                  <td className="py-3 px-4 text-center font-medium">{getActiveCount(comm)}</td>
                   <td className="py-3 px-4 text-center">
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
@@ -401,11 +420,11 @@ export const CommitteesView: React.FC<CommitteesViewProps> = ({
                     <button
                       onClick={() => {
                         onSelectCommittee(comm);
-                        onNavigate('committee-detail');
+                        router.push(`/committees/${comm.id}`);
                       }}
                       className="text-primary hover:underline font-semibold text-label-sm inline-flex items-center gap-1"
                     >
-                      <span>Profile</span>
+                      <span>Profile &amp; Roster</span>
                       <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
                     </button>
                   </td>
@@ -420,49 +439,47 @@ export const CommitteesView: React.FC<CommitteesViewProps> = ({
       <div className="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant/40 flex flex-col sm:flex-row items-center justify-between gap-space-md shadow-sm">
         <div className="flex items-center gap-2">
           <span className="text-[12px] text-on-surface-variant">Rows per page:</span>
-          <select className="bg-surface-container-low text-body-sm font-body-sm rounded px-2 py-1 text-on-surface border border-outline-variant/40 focus:outline-none">
-            <option>9</option>
-            <option>18</option>
-            <option>27</option>
+          <select
+            value={rowsPerPage}
+            onChange={(e) => {
+              setRowsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="bg-surface-container-low text-body-sm font-body-sm rounded px-2 py-1 text-on-surface border border-outline-variant/40 focus:outline-none cursor-pointer"
+          >
+            <option value={9}>9</option>
+            <option value={18}>18</option>
+            <option value={27}>27</option>
           </select>
-          <span className="text-[12px] text-outline font-medium">Page {currentPage} of 4</span>
+          <span className="text-[12px] text-outline font-medium">
+            Page {safeCurrentPage} of {totalPages}
+          </span>
         </div>
 
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
+            disabled={safeCurrentPage <= 1}
             className="w-8 h-8 flex items-center justify-center rounded bg-surface-container-low text-outline disabled:opacity-40 transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]">chevron_left</span>
           </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+            <button
+              key={pageNum}
+              onClick={() => setCurrentPage(pageNum)}
+              className={`w-8 h-8 flex items-center justify-center rounded text-label-md font-semibold transition-colors ${
+                safeCurrentPage === pageNum
+                  ? 'bg-primary text-on-primary'
+                  : 'bg-surface-container-low text-on-surface hover:bg-surface-container'
+              }`}
+            >
+              {pageNum}
+            </button>
+          ))}
           <button
-            onClick={() => setCurrentPage(1)}
-            className={`w-8 h-8 flex items-center justify-center rounded text-label-md font-semibold ${
-              currentPage === 1 ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface'
-            }`}
-          >
-            1
-          </button>
-          <button
-            onClick={() => setCurrentPage(2)}
-            className={`w-8 h-8 flex items-center justify-center rounded text-label-md font-semibold ${
-              currentPage === 2 ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface'
-            }`}
-          >
-            2
-          </button>
-          <button
-            onClick={() => setCurrentPage(3)}
-            className={`w-8 h-8 flex items-center justify-center rounded text-label-md font-semibold ${
-              currentPage === 3 ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface'
-            }`}
-          >
-            3
-          </button>
-          <button
-            onClick={() => setCurrentPage(Math.min(4, currentPage + 1))}
-            disabled={currentPage === 4}
+            onClick={() => setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))}
+            disabled={safeCurrentPage >= totalPages}
             className="w-8 h-8 flex items-center justify-center rounded bg-surface-container-low text-on-surface disabled:opacity-40 transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]">chevron_right</span>

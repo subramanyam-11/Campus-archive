@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ViewType, UserPersona } from '../types';
 import { USER_PERSONAS } from '../data/mockData';
 import { NotificationsDropdown } from './NotificationsDropdown';
 
 interface HeaderProps {
   currentView: ViewType;
+  selectedCommitteeId?: string;
   selectedCommitteeName?: string;
   selectedEventTitle?: string;
   activePersona: UserPersona;
@@ -19,6 +21,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   currentView,
+  selectedCommitteeId,
   selectedCommitteeName,
   selectedEventTitle,
   activePersona,
@@ -28,6 +31,7 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   onOpenMobileSidebar,
 }) => {
+  const router = useRouter();
   const [searchInput, setSearchInput] = useState('');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -72,13 +76,17 @@ export const Header: React.FC<HeaderProps> = ({
       case 'committee-detail':
         return (
           <>
+            <button onClick={() => onNavigate('dashboard')} className="hover:text-primary transition-colors">
+              Home
+            </button>
+            <span className="material-symbols-outlined text-[14px] text-outline">chevron_right</span>
             <button onClick={() => onNavigate('committees')} className="hover:text-primary transition-colors flex items-center gap-1">
-              <span className="material-symbols-outlined text-[18px] text-outline">groups</span>
+              <span className="material-symbols-outlined text-[16px] text-outline">groups</span>
               <span>Committees</span>
             </button>
-            <span className="material-symbols-outlined text-[16px] text-outline">chevron_right</span>
-            <span className="text-on-surface font-medium truncate max-w-[200px] md:max-w-md">
-              {selectedCommitteeName || 'ACM Student Chapter & Coding Club'}
+            <span className="material-symbols-outlined text-[14px] text-outline">chevron_right</span>
+            <span className="text-on-surface font-semibold truncate max-w-[200px] md:max-w-md">
+              {selectedCommitteeName || 'Committee Profile'}
             </span>
           </>
         );
@@ -127,11 +135,28 @@ export const Header: React.FC<HeaderProps> = ({
       case 'roster':
         return (
           <>
-            <button onClick={() => onNavigate('committees')} className="hover:text-primary transition-colors">Committees</button>
+            <button onClick={() => onNavigate('dashboard')} className="hover:text-primary transition-colors">
+              Home
+            </button>
             <span className="material-symbols-outlined text-[14px] text-outline">chevron_right</span>
-            <span className="hover:text-primary transition-colors cursor-pointer" onClick={() => onNavigate('committee-detail')}>ACM Student Chapter</span>
+            <button onClick={() => onNavigate('committees')} className="hover:text-primary transition-colors">
+              Committees
+            </button>
             <span className="material-symbols-outlined text-[14px] text-outline">chevron_right</span>
-            <span className="text-on-surface font-medium">Roster Management</span>
+            <button
+              onClick={() => {
+                if (selectedCommitteeId) {
+                  router.push(`/committees/${selectedCommitteeId}`);
+                } else {
+                  onNavigate('committee-detail');
+                }
+              }}
+              className="hover:text-primary transition-colors truncate max-w-[200px]"
+            >
+              {selectedCommitteeName || 'Committee'}
+            </button>
+            <span className="material-symbols-outlined text-[14px] text-outline">chevron_right</span>
+            <span className="text-on-surface font-semibold">Roster</span>
           </>
         );
       case 'reports':

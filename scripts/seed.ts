@@ -2,6 +2,7 @@ import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import type { Committee, EventItem, UserProfile, EventStatus } from '../src/types';
+import { COMMITTEE_ROSTERS } from '../src/data/mockData';
 
 // Connect to Firestore & Auth emulators for seeding
 process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8080';
@@ -769,6 +770,14 @@ async function seedFirestoreDatabase() {
   console.log(`📂 Seeding ${SEED_COMMITTEES.length} Committees...`);
   for (const committee of SEED_COMMITTEES) {
     await db.collection('committees').doc(committee.id).set(committee);
+  }
+
+  // 1b. Seed Committee Members Subcollection
+  console.log(`👥 Seeding Committee Members subcollections...`);
+  for (const [committeeId, members] of Object.entries(COMMITTEE_ROSTERS)) {
+    for (const member of members) {
+      await db.collection('committees').doc(committeeId).collection('members').doc(member.id).set(member);
+    }
   }
 
   // 2. Seed Users
